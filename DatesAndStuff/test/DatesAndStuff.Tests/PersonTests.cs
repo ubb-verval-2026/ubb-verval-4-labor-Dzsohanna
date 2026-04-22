@@ -109,6 +109,6 @@ public class PersonTests
     public void IncreaseSalary_SmallerThanMinusTenPerc_ShouldFail()
     {
         var sut = PersonFactory.CreateTestPerson();
-        Assert.Throws<ArgumentOutOfRangeException>(() => sut.IncreaseSalary(-10));
+        Assert.Throws<ArgumentOutOfRangeException>(() => sut.IncreaseSalary(-10.1));
     }
 }
