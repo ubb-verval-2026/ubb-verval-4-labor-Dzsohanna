@@ -113,10 +113,8 @@ public class PersonPageTests
         wait.Until(ExpectedConditions.ElementToBeClickable(
             By.XPath("//*[@data-test='PersonPageNavigation']"))).Click();
 
-        // Várjuk meg hogy a Blazor SignalR kapcsolat felépüljön és az oldal stable legyen
         wait.Until(ExpectedConditions.UrlContains("/person"));
 
-        // Várjuk meg hogy az elem létezzen ÉS stable legyen
         wait.Until(d => {
             try
             {
