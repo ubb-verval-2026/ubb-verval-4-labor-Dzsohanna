@@ -189,4 +189,45 @@ public class PersonPageTests
             acceptNextAlert = true;
         }
     }
+
+    [Test]
+    public void Person_SalaryIncrease_ShouldShowErrorMessages_WhenPercentageIsBelowMinusTen()
+    {
+        // Arrange
+        driver.Navigate().GoToUrl(BaseURL);
+
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+
+        wait.Until(ExpectedConditions.ElementToBeClickable(
+            By.XPath("//*[@data-test='PersonPageNavigation']"))).Click();
+
+        wait.Until(ExpectedConditions.UrlContains("/person"));
+
+        wait.Until(d => {
+            try
+            {
+                var el = d.FindElement(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']"));
+                el.Clear();
+                return el;
+            }
+            catch (StaleElementReferenceException)
+            {
+                return null;
+            }
+        }).SendKeys((-11).ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        // Act
+        wait.Until(ExpectedConditions.ElementToBeClickable(
+            By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']"))).Click();
+
+        // Assert
+        wait.Until(ExpectedConditions.ElementIsVisible(
+            By.CssSelector(".validation-errors"))).Text
+            .Should().Contain("The specified percentag should be between -10 and infinity.");
+
+        // Assert
+        wait.Until(ExpectedConditions.ElementIsVisible(
+            By.CssSelector(".validation-message"))).Text
+            .Should().Contain("The specified percentag should be between -10 and infinity.");
+    }
 }
