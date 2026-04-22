@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
@@ -98,27 +98,48 @@ public class PersonPageTests
     }
 
     [Test]
-    public void Person_SalaryIncrease_ShouldIncrease()
+    [TestCase(5, 5250)]
+    [TestCase(10, 5500)]
+    [TestCase(0, 5000)]
+    [TestCase(50, 7500)]
+    [TestCase(2.5, 5125)]
+    [TestCase(-10, 4500)]
+    public void Person_SalaryIncrease_ShouldIncrease(double percentage, double expectedSalary)
     {
         // Arrange
         driver.Navigate().GoToUrl(BaseURL);
-        driver.FindElement(By.XPath("//*[@data-test='PersonPageNavigation']")).Click();
 
-        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(5));
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
 
-        var input = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']")));
-        input.Clear();
-        input.SendKeys("5");
+        wait.Until(ExpectedConditions.ElementToBeClickable(
+            By.XPath("//*[@data-test='PersonPageNavigation']"))).Click();
+
+        wait.Until(ExpectedConditions.UrlContains("/person"));
+
+        wait.Until(d => {
+            try
+            {
+                var el = d.FindElement(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']"));
+                el.Clear();
+                return el;
+            }
+            catch (StaleElementReferenceException)
+            {
+                return null;
+            }
+        }).SendKeys(percentage.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         // Act
-        var submitButton = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']")));
-        submitButton.Click();
-
+        wait.Until(ExpectedConditions.ElementToBeClickable(
+            By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']"))).Click();
 
         // Assert
-        var salaryLabel = wait.Until(ExpectedConditions.ElementExists(By.XPath("//*[@data-test='DisplayedSalary']")));
-        var salaryAfterSubmission = double.Parse(salaryLabel.Text);
-        salaryAfterSubmission.Should().BeApproximately(5250, 0.001);
+        var salaryAfterSubmission = double.Parse(
+            wait.Until(ExpectedConditions.ElementIsVisible(
+                By.XPath("//*[@data-test='DisplayedSalary']"))).Text,
+            System.Globalization.CultureInfo.InvariantCulture);
+
+        salaryAfterSubmission.Should().BeApproximately(expectedSalary, 0.001);
     }
     private bool IsElementPresent(By by)
     {
@@ -166,5 +187,46 @@ public class PersonPageTests
         {
             acceptNextAlert = true;
         }
+    }
+
+    [Test]
+    public void Person_SalaryIncrease_ShouldShowErrorMessages_WhenPercentageIsBelowMinusTen()
+    {
+        // Arrange
+        driver.Navigate().GoToUrl(BaseURL);
+
+        var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(10));
+
+        wait.Until(ExpectedConditions.ElementToBeClickable(
+            By.XPath("//*[@data-test='PersonPageNavigation']"))).Click();
+
+        wait.Until(ExpectedConditions.UrlContains("/person"));
+
+        wait.Until(d => {
+            try
+            {
+                var el = d.FindElement(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']"));
+                el.Clear();
+                return el;
+            }
+            catch (StaleElementReferenceException)
+            {
+                return null;
+            }
+        }).SendKeys((-11).ToString(System.Globalization.CultureInfo.InvariantCulture));
+
+        // Act
+        wait.Until(ExpectedConditions.ElementToBeClickable(
+            By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']"))).Click();
+
+        // Assert
+        wait.Until(ExpectedConditions.ElementIsVisible(
+            By.CssSelector(".validation-errors"))).Text
+            .Should().Contain("The specified percentag should be between -10 and infinity.");
+
+        // Assert
+        wait.Until(ExpectedConditions.ElementIsVisible(
+            By.CssSelector(".validation-message"))).Text
+            .Should().Contain("The specified percentag should be between -10 and infinity.");
     }
 }
