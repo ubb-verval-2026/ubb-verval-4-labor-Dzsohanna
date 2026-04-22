@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.Reflection;
 using System.Text;
@@ -113,21 +113,31 @@ public class PersonPageTests
         wait.Until(ExpectedConditions.ElementToBeClickable(
             By.XPath("//*[@data-test='PersonPageNavigation']"))).Click();
 
-        var input = wait.Until(ExpectedConditions.ElementToBeClickable(
-            By.XPath("//*[@data-test='SalaryIncreasePercentageInput']")));
-        input.Clear();
-        input.SendKeys(percentage.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        // Várjuk meg hogy a Blazor SignalR kapcsolat felépüljön és az oldal stable legyen
+        wait.Until(ExpectedConditions.UrlContains("/person"));
+
+        // Várjuk meg hogy az elem létezzen ÉS stable legyen
+        wait.Until(d => {
+            try
+            {
+                var el = d.FindElement(By.XPath("//*[@data-test='SalaryIncreasePercentageInput']"));
+                el.Clear();
+                return el;
+            }
+            catch (StaleElementReferenceException)
+            {
+                return null;
+            }
+        }).SendKeys(percentage.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         // Act
         wait.Until(ExpectedConditions.ElementToBeClickable(
             By.XPath("//*[@data-test='SalaryIncreaseSubmitButton']"))).Click();
 
         // Assert
-        var salaryLabel = wait.Until(ExpectedConditions.ElementIsVisible(
-            By.XPath("//*[@data-test='DisplayedSalary']")));
-
         var salaryAfterSubmission = double.Parse(
-            salaryLabel.Text,
+            wait.Until(ExpectedConditions.ElementIsVisible(
+                By.XPath("//*[@data-test='DisplayedSalary']"))).Text,
             System.Globalization.CultureInfo.InvariantCulture);
 
         salaryAfterSubmission.Should().BeApproximately(expectedSalary, 0.001);
